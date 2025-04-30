@@ -10,6 +10,7 @@ from langchain_groq import ChatGroq
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from io import BytesIO
+from streamlit_autorefresh import st_autorefresh
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +20,6 @@ collection_name = os.getenv("COLLECTION_NAME")
 groq_api_key = os.getenv("GROQ_API_KEY")
 
 # MongoDB connection
-@st.cache_resource
 def connect_mongo():
     client = MongoClient(mongo_uri)
     db = client[db_name]
@@ -33,7 +33,6 @@ def get_data(collection):
     return df
 
 # Train the regression model
-@st.cache_resource
 def train_model(X, y):
     model = RandomForestRegressor(random_state=42)
     model.fit(X, y)
@@ -66,9 +65,7 @@ Write a report that includes:
         param_info=param_info
     )
 
-    # Remove the unnecessary stars (**) in the report
     report_cleaned = report.replace("**", "")
-
     return report_cleaned
 
 # Function to save report as TXT
@@ -82,7 +79,11 @@ def save_report_as_txt(text: str, filename: str) -> BytesIO:
 st.set_page_config(page_title="Water Quality AI Analyzer", layout="wide")
 st.title("💧 Water Quality Index Prediction & AI-Powered Report")
 
-# Load data
+# Add auto-refresh using Streamlit timer
+st_autorefresh(interval=60 * 1000, key="datarefresh")
+st.markdown("⏰ Auto-refreshing every 60 seconds to fetch latest data...")
+
+# Real-time data load from MongoDB
 collection = connect_mongo()
 df = get_data(collection)
 
@@ -90,7 +91,7 @@ if df.empty:
     st.warning("No data found in MongoDB.")
     st.stop()
 
-st.success("✔️ Data successfully loaded from MongoDB")
+st.success("✅ Data successfully loaded from MongoDB")
 st.dataframe(df.head())
 
 # Define features and target
@@ -112,19 +113,19 @@ shap_values = explainer(X)
 
 # Display SHAP feature importance with smaller size
 st.subheader("📊 Feature Impact on WQI (SHAP Values)")
-fig, ax = plt.subplots(figsize=(6, 4))  # Adjust the size here
+fig, ax = plt.subplots(figsize=(6, 4))
 shap.summary_plot(shap_values, X, plot_type="bar", show=False)
 st.pyplot(fig)
 
 # Select record
 st.subheader("🔍 Select a Data Record for Detailed Analysis")
-index = st.number_input("Choose Record Index", min_value=0, max_value=len(df)-1, value=0)
+index = st.number_input("🔢 Choose Record Index", min_value=0, max_value=len(df)-1, value=0)
 selected = df.iloc[index]
 
 # Show selected record details
-st.markdown(f"**🔢 Selected Index:** `{index}`")
-st.markdown(f"**📍 Location:** `{selected.get('location', 'N/A')}`")
-st.markdown(f"**⏰ Timestamp:** `{selected.get('timestamp', 'N/A')}`")
+st.markdown(f"🔢 Selected Index: `{index}`")
+st.markdown(f"📍 Location: `{selected.get('location', 'N/A')}`")
+st.markdown(f"⏰ Timestamp: `{selected.get('timestamp', 'N/A')}`")
 
 input_data = selected[feature_cols].to_frame().T
 predicted_wqi = model.predict(input_data)[0]
@@ -143,7 +144,7 @@ top_impact = impact.head(3).to_dict()
 st.markdown(f"### 🤖 Predicted WQI: `{predicted_wqi:.2f}`")
 
 # Generate AI report and download
-if st.button("🧑‍💻 Generate AI Report"):
+if st.button("📝 Generate AI Report"):
     location = selected.get("location", "Unknown")
     timestamp = selected.get("timestamp", "Unknown")
     report = generate_report(top_impact, predicted_wqi, location, timestamp, selected)
@@ -156,7 +157,7 @@ if st.button("🧑‍💻 Generate AI Report"):
     report_txt = save_report_as_txt(report, txt_file_name)
 
     st.download_button(
-        label="📥 Download Report (TXT)",
+        label="📄 Download Report (TXT)",
         data=report_txt,
         file_name=txt_file_name,
         mime="text/plain"
