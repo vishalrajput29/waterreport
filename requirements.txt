@@ -9,4 +9,5 @@ langchain
 langchain-groq
 groq
 reportlab
+streamlit-autorefresh
 
