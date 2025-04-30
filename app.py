@@ -11,7 +11,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from io import BytesIO
 from streamlit_autorefresh import st_autorefresh
-
+#
 # Load environment variables
 load_dotenv()
 mongo_uri = os.getenv("MONGO_URI")
