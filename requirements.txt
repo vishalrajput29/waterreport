@@ -1,0 +1,12 @@
+streamlit
+pymongo
+pandas
+python-dotenv
+scikit-learn
+matplotlib
+shap
+langchain
+langchain-groq
+groq
+reportlab
+
