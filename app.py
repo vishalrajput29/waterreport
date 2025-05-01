@@ -11,7 +11,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from io import BytesIO
 from streamlit_autorefresh import st_autorefresh
-#
+
 # Load environment variables
 load_dotenv()
 mongo_uri = os.getenv("MONGO_URI")
@@ -45,7 +45,7 @@ def generate_report(feature_impact, predicted_wqi, location, timestamp, selected
     prompt = PromptTemplate.from_template(
         """You are an expert environmental analyst.
 
-The predicted Water Quality Index (WQI) is {predicted_wqi} at location "{location}" on {timestamp}.
+The predicted Water Quality Index (WQI) is {predicted_wqi} at location \"{location}\" on {timestamp}.
 The top contributing parameters with their actual sensor values are:
 {param_info}
 
@@ -119,11 +119,13 @@ st.pyplot(fig)
 
 # Select record
 st.subheader("🔍 Select a Data Record for Detailed Analysis")
-index = st.number_input("🔢 Choose Record Index", min_value=0, max_value=len(df)-1, value=0)
-selected = df.iloc[index]
+record_options = [f"{i}: {row.get('location', 'Unknown')} @ {row.get('timestamp', 'N/A')}" for i, row in df.iterrows()]
+selected_label = st.selectbox("📋 Select a Record by Location & Time", options=record_options)
+selected_index = int(selected_label.split(":")[0])
+selected = df.iloc[selected_index]
 
 # Show selected record details
-st.markdown(f"🔢 Selected Index: `{index}`")
+st.markdown(f"🔢 Selected Index: `{selected_index}`")
 st.markdown(f"📍 Location: `{selected.get('location', 'N/A')}`")
 st.markdown(f"⏰ Timestamp: `{selected.get('timestamp', 'N/A')}`")
 
